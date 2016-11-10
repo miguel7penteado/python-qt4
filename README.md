@@ -21,3 +21,9 @@ Você pode usar o instalador do eclipse inserindo o site do repositório do plug
 ![Instalador Eclipse 4.6 - inserindo endereço](http://download.eclipse.org/errors/content/eclipse-software-install-win10-v1.png)
 
 
+Depois de instalado o plugin, considerando que **você já tem o python instaldo**, seja o python versão **2.7**, seja o python versão **3.5**, você deve fazer o eclipse reconhecer onde estão os executáveis do interpretador python no seu sistema:
+[Configurando interpretador Python](http://www.pydev.org/manual_101_interpreter.html)
+
+![Local do executável do interpretador Python](http://www.pydev.org/images/interpreter_mac.png)
+![Local no eclipse onde você configura o interpretador](http://www.pydev.org/images/interpreter.png)
+
