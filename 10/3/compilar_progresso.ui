@@ -1,0 +1,8 @@
+
+As interfaces de definicao de janela (arquivos .ui) sao geradas pelo
+
+QtDesigner do Qt4
+
+Para "compilar" os arquivos ui, você deve utilizar o utilitario pyuic4
+
+pyuic4 progresso.ui -o progresso.py
