@@ -10,11 +10,14 @@ import sys, time
 class BarraProgressosFluxo1(QObject):
     '''Atributos Public'''
     tamanho_contagem_fluxo1 = 100
+    continuar_fluxo1        = None
+
     
     '''Construtor'''
     def __init__(self,parametro_contador=None):
         super(BarraProgressosFluxo1,self).__init__() 
         self.tamanho_contagem_fluxo1 = parametro_contador
+        self.continuar_fluxo1   = True
 
     
     '''Metodos da Classe - sobrecarga do metodo run '''
@@ -23,21 +26,27 @@ class BarraProgressosFluxo1(QObject):
         contador_laco = None
         self.emit(QtCore.SIGNAL("sinal_valor_maximo_fluxo1(PyQt_PyObject)"),self.tamanho_contagem_fluxo1)
         contador_laco=0
-        while ( contador_laco < self.tamanho_contagem_fluxo1):
+        while ( (contador_laco < self.tamanho_contagem_fluxo1) and ( self.continuar_fluxo1 ) ):
             if (time.time() % 1==0):
                 contador_laco+=1
                 print '\nFuncao run Fluxo 1 %s ' % str(contador_laco)
                 self.emit(QtCore.SIGNAL("sinal_atualizar_fluxo1(PyQt_PyObject)"),contador_laco)
 
+    @QtCore.pyqtSlot()    
+    def finalizar_fluxo1(self):
+        self.continuar_fluxo1 = False
+
 
 class BarraProgressosFluxo2(QObject):
     '''Atributos Public'''
     tamanho_contagem_fluxo2 = 100
+    continuar_fluxo2        = None
     
     '''Construtor'''
-    def __init__(self,parametro_contador=None):
+    def __init__(self,parametro_contador = None):
         super(BarraProgressosFluxo2,self).__init__() 
         self.tamanho_contagem_fluxo2 = parametro_contador
+        self.continuar_fluxo2 = True
     
     '''Metodos da Classe - sobrecarga do metodo run '''
     @QtCore.pyqtSlot()
@@ -46,11 +55,17 @@ class BarraProgressosFluxo2(QObject):
         
         self.emit(QtCore.SIGNAL("sinal_valor_maximo_fluxo2(PyQt_PyObject)"),self.tamanho_contagem_fluxo2)
         contador_laco=0
-        while ( contador_laco < self.tamanho_contagem_fluxo2):
+        while ( (contador_laco < self.tamanho_contagem_fluxo2) and ( self.continuar_fluxo2 ) ):
             if (time.time() % 1==0):
                 contador_laco+=1
                 print '\nFuncao run Fluxo 2 %s ' % str(contador_laco)
                 self.emit(QtCore.SIGNAL("sinal_atualizar_fluxo2(PyQt_PyObject)"),contador_laco)
+
+    @QtCore.pyqtSlot()    
+    def finalizar_fluxo2(self):
+        self.continuar_fluxo2 = False
+
+    
 
 
 # create the dialog for zoom to point
@@ -107,6 +122,9 @@ class JanelaProgresso(QtGui.QDialog):
         QtCore.QObject.connect(self.codigo_fluxo1, QtCore.SIGNAL("sinal_atualizar_fluxo1(PyQt_PyObject)"), self.atualizar_mostrador_fluxo1)
         QtCore.QObject.connect(self.codigo_fluxo2, QtCore.SIGNAL("sinal_atualizar_fluxo2(PyQt_PyObject)"), self.atualizar_mostrador_fluxo2)
         
+        QtCore.QObject.connect(self, QtCore.SIGNAL("quit()"), self.codigo_fluxo1 ,QtCore.SLOT('finalizar_fluxo1()'), Qt.QueuedConnection)
+        QtCore.QObject.connect(self, QtCore.SIGNAL("quit()"), self.codigo_fluxo2 ,QtCore.SLOT('finalizar_fluxo2()'), Qt.QueuedConnection)
+        
         self.contador_barra=0
 
         self.__fluxo1__.start()
@@ -122,8 +140,17 @@ class JanelaProgresso(QtGui.QDialog):
         self.emit(QtCore.SIGNAL("sinal_ativar_fluxo1()"))
         self.emit(QtCore.SIGNAL("sinal_ativar_fluxo2()"))
         
-        
     
+    def closeEvent(self, parametro_evento):
+        print("evento")
+        resposta = QtGui.QMessageBox.question(self, 'Saindo', "Voce quer mesmo sair?", QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+        
+        if resposta == QtGui.QMessageBox.Yes:
+            parametro_evento.accept()
+        else:
+            parametro_evento.ignore()
+        
+        
     def atualizar_mostrador_fluxo1(self,parametro_contado):
         self.contador_fluxo1 = parametro_contado
         print '\nsinal fluxo 1 %d' % self.contador_fluxo1
