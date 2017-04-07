@@ -26,14 +26,18 @@ class BarraProgressosFluxo1(QObject):
         contador_laco = None
         self.emit(QtCore.SIGNAL("sinal_valor_maximo_fluxo1(PyQt_PyObject)"),self.tamanho_contagem_fluxo1)
         contador_laco=0
+
         while ( (contador_laco < self.tamanho_contagem_fluxo1) and ( self.continuar_fluxo1 ) ):
             if (time.time() % 1==0):
                 contador_laco+=1
                 print '\nFuncao run Fluxo 1 %s ' % str(contador_laco)
                 self.emit(QtCore.SIGNAL("sinal_atualizar_fluxo1(PyQt_PyObject)"),contador_laco)
-
+        
+        self.emit(QtCore.SIGNAL("acabou_fluxo1()"))
+        
     @QtCore.pyqtSlot()    
     def finalizar_fluxo1(self):
+        print 'Finalizar Fluxo 1'
         self.continuar_fluxo1 = False
 
 
@@ -55,14 +59,18 @@ class BarraProgressosFluxo2(QObject):
         
         self.emit(QtCore.SIGNAL("sinal_valor_maximo_fluxo2(PyQt_PyObject)"),self.tamanho_contagem_fluxo2)
         contador_laco=0
+
         while ( (contador_laco < self.tamanho_contagem_fluxo2) and ( self.continuar_fluxo2 ) ):
             if (time.time() % 1==0):
                 contador_laco+=1
                 print '\nFuncao run Fluxo 2 %s ' % str(contador_laco)
                 self.emit(QtCore.SIGNAL("sinal_atualizar_fluxo2(PyQt_PyObject)"),contador_laco)
 
+        self.emit(QtCore.SIGNAL("acabou_fluxo2()"))
+
     @QtCore.pyqtSlot()    
     def finalizar_fluxo2(self):
+        print 'Finalizar fluxo 2'
         self.continuar_fluxo2 = False
 
     
@@ -71,9 +79,9 @@ class BarraProgressosFluxo2(QObject):
 # create the dialog for zoom to point
 class JanelaProgresso(QtGui.QDialog):
     '''Atributos Privados'''
-    __fluxo_principal__              = None
-    ___fluxo1___                     = None
-    ___fluxo2___                     = None
+    __fluxo_principal__            = None
+    __fluxo1__                     = None
+    __fluxo2__                     = None
     
     '''Atributos Public'''
     janela                           = None
@@ -113,17 +121,27 @@ class JanelaProgresso(QtGui.QDialog):
         Qt.QueuedConnection -
         '''
         
-        QtCore.QObject.connect(self, QtCore.SIGNAL("sinal_ativar_fluxo1()"), self.codigo_fluxo1 ,QtCore.SLOT('executar()'), Qt.QueuedConnection)
-        QtCore.QObject.connect(self, QtCore.SIGNAL("sinal_ativar_fluxo2()"), self.codigo_fluxo2 ,QtCore.SLOT('executar()'), Qt.QueuedConnection)
+        QtCore.QObject.connect(self              , QtCore.SIGNAL("sinal_ativar_fluxo1()") , self.codigo_fluxo1 ,QtCore.SLOT('executar()')   , Qt.QueuedConnection)
+        QtCore.QObject.connect(self              , QtCore.SIGNAL("sinal_ativar_fluxo2()") , self.codigo_fluxo2 ,QtCore.SLOT('executar()')   , Qt.QueuedConnection)
         
-        QtCore.QObject.connect(self.codigo_fluxo1, QtCore.SIGNAL("sinal_valor_maximo_fluxo1(PyQt_PyObject)"), self.definir_tamanho_total_fluxo1)
-        QtCore.QObject.connect(self.codigo_fluxo2, QtCore.SIGNAL("sinal_valor_maximo_fluxo2(PyQt_PyObject)"), self.definir_tamanho_total_fluxo2)
 
-        QtCore.QObject.connect(self.codigo_fluxo1, QtCore.SIGNAL("sinal_atualizar_fluxo1(PyQt_PyObject)"), self.atualizar_mostrador_fluxo1)
-        QtCore.QObject.connect(self.codigo_fluxo2, QtCore.SIGNAL("sinal_atualizar_fluxo2(PyQt_PyObject)"), self.atualizar_mostrador_fluxo2)
+        QtCore.QObject.connect(self.__fluxo1__   , QtCore.SIGNAL("finished()")            , self.codigo_fluxo1 ,QtCore.SLOT('deleteLater()'), Qt.QueuedConnection)
+        QtCore.QObject.connect(self.__fluxo1__   , QtCore.SIGNAL("finished()")            , self.__fluxo1__    ,QtCore.SLOT('deleteLater()'), Qt.QueuedConnection)
+        QtCore.QObject.connect(self              , QtCore.SIGNAL("fechando_janela()")     , self.__fluxo1__    ,QtCore.SLOT('quit()')       , Qt.DirectConnection)
         
-        QtCore.QObject.connect(self, QtCore.SIGNAL("quit()"), self.codigo_fluxo1 ,QtCore.SLOT('finalizar_fluxo1()'), Qt.QueuedConnection)
-        QtCore.QObject.connect(self, QtCore.SIGNAL("quit()"), self.codigo_fluxo2 ,QtCore.SLOT('finalizar_fluxo2()'), Qt.QueuedConnection)
+        QtCore.QObject.connect(self.__fluxo2__   , QtCore.SIGNAL("finished()")            , self.codigo_fluxo2 ,QtCore.SLOT('deleteLater()'), Qt.QueuedConnection)
+        QtCore.QObject.connect(self.__fluxo2__   , QtCore.SIGNAL("finished()")            , self.__fluxo2__    ,QtCore.SLOT('deleteLater()'), Qt.QueuedConnection)
+        QtCore.QObject.connect(self              , QtCore.SIGNAL("fechando_janela()")     , self.__fluxo2__    ,QtCore.SLOT('quit()')       , Qt.QueuedConnection)
+
+        QtCore.QObject.connect(self              , QtCore.SIGNAL("fechando_janela()")     , self.__fluxo1__    ,QtCore.SLOT('terminate()')  , Qt.DirectConnection)
+        QtCore.QObject.connect(self              , QtCore.SIGNAL("fechando_janela()")     , self.__fluxo2__    ,QtCore.SLOT('terminate()')  , Qt.DirectConnection)
+
+        QtCore.QObject.connect(self.codigo_fluxo1, QtCore.SIGNAL("sinal_valor_maximo_fluxo1(PyQt_PyObject)")  , self.definir_tamanho_total_fluxo1)
+        QtCore.QObject.connect(self.codigo_fluxo2, QtCore.SIGNAL("sinal_valor_maximo_fluxo2(PyQt_PyObject)")  , self.definir_tamanho_total_fluxo2)
+
+        QtCore.QObject.connect(self.codigo_fluxo1, QtCore.SIGNAL("sinal_atualizar_fluxo1(PyQt_PyObject)")     , self.atualizar_mostrador_fluxo1)
+        QtCore.QObject.connect(self.codigo_fluxo2, QtCore.SIGNAL("sinal_atualizar_fluxo2(PyQt_PyObject)")     , self.atualizar_mostrador_fluxo2)
+        
         
         self.contador_barra=0
 
@@ -147,6 +165,12 @@ class JanelaProgresso(QtGui.QDialog):
         
         if resposta == QtGui.QMessageBox.Yes:
             parametro_evento.accept()
+            if ( self.__fluxo1__.isRunning() ):
+                self.__fluxo1__.exit()
+                #self.__fluxo1__.wait()
+            if ( self.__fluxo2__.isRunning() ):
+                self.__fluxo2__.exit()
+                #self.__fluxo2__.wait()            
         else:
             parametro_evento.ignore()
         
