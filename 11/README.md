@@ -1,4 +1,4 @@
-# Gerencia de Memória
+# Gerência de Memória
 
 Uma aplicação pode potencialmente consumir muita memória
 se, for example, não for tomado cuidados com o fechamento de componentes.
