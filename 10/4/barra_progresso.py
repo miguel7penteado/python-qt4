@@ -9,7 +9,7 @@ import sys, time
 
 class BarraProgressosFluxo1(QObject):
     '''Atributos Public'''
-    tamanho_contagem_fluxo1 = 100
+    tamanho_contagem_fluxo1 = 20
     continuar_fluxo1        = None
 
     
@@ -20,7 +20,7 @@ class BarraProgressosFluxo1(QObject):
         self.continuar_fluxo1   = True
 
     
-    '''Metodos da Classe - sobrecarga do metodo run '''
+    '''Metodos da Classe'''
     @QtCore.pyqtSlot()
     def executar(self):
         contador_laco = None
@@ -43,7 +43,7 @@ class BarraProgressosFluxo1(QObject):
 
 class BarraProgressosFluxo2(QObject):
     '''Atributos Public'''
-    tamanho_contagem_fluxo2 = 100
+    tamanho_contagem_fluxo2 = 20
     continuar_fluxo2        = None
     
     '''Construtor'''
@@ -52,7 +52,7 @@ class BarraProgressosFluxo2(QObject):
         self.tamanho_contagem_fluxo2 = parametro_contador
         self.continuar_fluxo2 = True
     
-    '''Metodos da Classe - sobrecarga do metodo run '''
+    '''Metodos da Classe '''
     @QtCore.pyqtSlot()
     def executar(self):
         contador_laco = None
@@ -97,7 +97,7 @@ class JanelaProgresso(QtGui.QDialog):
     def __init__(self):
         QtGui.QDialog.__init__(self)
         
-        self.tamanho_contagem_fluxo_principal = 100
+        self.tamanho_contagem_fluxo_principal = 20
         self.contador_fluxo1                  = 0
         self.contador_fluxo2                  = 0
         
@@ -110,15 +110,16 @@ class JanelaProgresso(QtGui.QDialog):
         self.__fluxo1__ = QThread()
         self.__fluxo2__ = QThread()        
         
-        self.codigo_fluxo1 = BarraProgressosFluxo1(100)
-        self.codigo_fluxo2 = BarraProgressosFluxo2(100)
+        self.codigo_fluxo1 = BarraProgressosFluxo1(10)
+        self.codigo_fluxo2 = BarraProgressosFluxo2(10)
         
         self.codigo_fluxo1.moveToThread(self.__fluxo1__)
         self.codigo_fluxo2.moveToThread(self.__fluxo2__)
         
         '''
-        Qt.AutoConnection   -
-        Qt.QueuedConnection -
+        Qt.AutoConnection   - 
+        Qt.QueuedConnection - 
+        Qt.DirectConnection - 
         '''
         
         QtCore.QObject.connect(self              , QtCore.SIGNAL("sinal_ativar_fluxo1()") , self.codigo_fluxo1 ,QtCore.SLOT('executar()')   , Qt.QueuedConnection)
@@ -133,8 +134,8 @@ class JanelaProgresso(QtGui.QDialog):
         QtCore.QObject.connect(self.__fluxo2__   , QtCore.SIGNAL("finished()")            , self.__fluxo2__    ,QtCore.SLOT('deleteLater()'), Qt.QueuedConnection)
         QtCore.QObject.connect(self              , QtCore.SIGNAL("fechando_janela()")     , self.__fluxo2__    ,QtCore.SLOT('quit()')       , Qt.QueuedConnection)
 
-        QtCore.QObject.connect(self              , QtCore.SIGNAL("fechando_janela()")     , self.__fluxo1__    ,QtCore.SLOT('terminate()')  , Qt.DirectConnection)
-        QtCore.QObject.connect(self              , QtCore.SIGNAL("fechando_janela()")     , self.__fluxo2__    ,QtCore.SLOT('terminate()')  , Qt.DirectConnection)
+        QtCore.QObject.connect(self              , QtCore.SIGNAL("fechando_janela()")     , self.codigo_fluxo1 ,QtCore.SLOT('finalizar_fluxo1()')  , Qt.DirectConnection)
+        QtCore.QObject.connect(self              , QtCore.SIGNAL("fechando_janela()")     , self.codigo_fluxo2 ,QtCore.SLOT('finalizar_fluxo2()')  , Qt.DirectConnection)
 
         QtCore.QObject.connect(self.codigo_fluxo1, QtCore.SIGNAL("sinal_valor_maximo_fluxo1(PyQt_PyObject)")  , self.definir_tamanho_total_fluxo1)
         QtCore.QObject.connect(self.codigo_fluxo2, QtCore.SIGNAL("sinal_valor_maximo_fluxo2(PyQt_PyObject)")  , self.definir_tamanho_total_fluxo2)
@@ -165,12 +166,15 @@ class JanelaProgresso(QtGui.QDialog):
         
         if resposta == QtGui.QMessageBox.Yes:
             parametro_evento.accept()
+                        
+            self.emit(QtCore.SIGNAL("fechando_janela()"))
+                        
             if ( self.__fluxo1__.isRunning() ):
                 self.__fluxo1__.exit()
-                #self.__fluxo1__.wait()
+                self.__fluxo1__.wait()
             if ( self.__fluxo2__.isRunning() ):
                 self.__fluxo2__.exit()
-                #self.__fluxo2__.wait()            
+                self.__fluxo2__.wait()            
         else:
             parametro_evento.ignore()
         
@@ -187,12 +191,13 @@ class JanelaProgresso(QtGui.QDialog):
 
     def definir_tamanho_total_fluxo1(self,parametro_valor_maximo):
         self.tamanho_contagem_fluxo1 = parametro_valor_maximo
-        print('\nsinal define valor maximo fluxo 1 %s') % parametro_valor_maximo
-        self.janela.progressoFluxo1.setMaximum(parametro_valor_maximo)
+        print('\nsinal define valor maximo fluxo 1 %s') % self.tamanho_contagem_fluxo1
+        self.janela.progressoFluxo1.setMaximum(self.tamanho_contagem_fluxo1)
 
     def definir_tamanho_total_fluxo2(self,parametro_valor_maximo):
-        print('\nsinal define valor maximo fluxo 2 %s') % parametro_valor_maximo
-        self.janela.progressoFluxo2.setMaximum(parametro_valor_maximo)
+        self.tamanho_contagem_fluxo2 = parametro_valor_maximo
+        print('\nsinal define valor maximo fluxo 2 %s') % self.tamanho_contagem_fluxo2
+        self.janela.progressoFluxo2.setMaximum(self.tamanho_contagem_fluxo2)
 
 
 if __name__=="__main__":
